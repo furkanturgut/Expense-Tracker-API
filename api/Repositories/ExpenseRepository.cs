@@ -50,8 +50,10 @@ namespace api.Repositories
             return expense;
         }
 
-        public async Task<List<Expense>> GetAllAsync(QueryObject query)
+        public async Task<List<Expense>> GetAllAsync(QueryObject query, String userName)
         {
+            var user = await  _userManager.FindByNameAsync(userName);
+            var userRole = await _userManager.GetRolesAsync(user);
             var expenses=  _context.expenses.Include(e=> e.Category).AsQueryable();
             if (query.PastWeek)
             {
@@ -68,19 +70,31 @@ namespace api.Repositories
             if(query.StartDate.HasValue)
             {
                 var startDate=query.StartDate.Value; 
-                expenses = expenses.Where(e=> e.CreatedDayTime >= startDate);
+                expenses =  expenses.Where(e=> e.CreatedDayTime >= startDate);
             }
+            if (userRole[0] == "User") {expenses = expenses.Where(u => u.UserId== user.Id.ToString());}
+           
             return await expenses.ToListAsync();           
         }
 
-        public async Task<Expense?> GetByIdAsync(int Id)
+        public async Task<Expense?> GetByIdAsync(int Id, string userName)
         {
+            var user = await  _userManager.FindByNameAsync(userName);
+            var userRole = await _userManager.GetRolesAsync(user);
             var expense = await _context.expenses.Include(e=>e.Category).FirstOrDefaultAsync(e=> e.Id== Id);
             if (expense==null)
             {
                 return null;
             }
-            return expense;
+            if (userRole[0]== "Admin"|| expense.UserId== user.Id)
+            {
+                return expense;
+            }
+            else
+            {
+                throw new UnauthorizedAccessException("You do not have permission to access this resource.");
+            }
+            
         }
 
         public async Task<Expense?> UpdateAsync(int Id, Expense expense, string userName, int categoryId)

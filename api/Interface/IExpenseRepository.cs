@@ -11,8 +11,8 @@ namespace api.Interface
     public interface IExpenseRepository
     {
         Task<Expense> CreateAsync(CreateExpenseDto expenseDto, string UserName, int CategoryId);
-        Task<List<Expense>> GetAllAsync(QueryObject query);
-        Task<Expense?> GetByIdAsync(int Id);
+        Task<List<Expense>> GetAllAsync(QueryObject query, String userName);
+        Task<Expense?> GetByIdAsync(int Id, string userName);
         Task<Expense?> UpdateAsync(int Id, Expense expense, string userName, int categoryId);
         Task<Expense?> DeleteAsync(int Id);
     }

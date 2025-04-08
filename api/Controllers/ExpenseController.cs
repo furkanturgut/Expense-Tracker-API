@@ -22,11 +22,13 @@ namespace api.Controllers
     {
         private readonly IExpenseRepository _expenseRepo;
         private readonly IMapper _mapper;
+        private readonly UserManager<AppUser> _userManager;
 
-        public ExpenseController(IExpenseRepository expenseRepo, IMapper mapper)
+        public ExpenseController(IExpenseRepository expenseRepo, IMapper mapper, UserManager<AppUser> userManager)
         {
             this._expenseRepo = expenseRepo;
             this._mapper = mapper;
+            this._userManager = userManager;
         }
 
         [HttpPost]
@@ -47,20 +49,30 @@ namespace api.Controllers
         [Authorize]
         public async Task<IActionResult> GetAll([FromQuery]QueryObject query)
         {
-            var expenses = _mapper.Map<List<GetExpenseDto>>(await _expenseRepo.GetAllAsync(query));
+            var userName = User.GetUserName();
+            var expenses = _mapper.Map<List<GetExpenseDto>>(await _expenseRepo.GetAllAsync(query, userName));
             return Ok(expenses);
         }
         [HttpGet]
         [Route("{expenseId:int}")]
          [Authorize]
         public async Task<IActionResult> GetById([FromRoute]int expenseId)
-        {
-            var expense = _mapper.Map<GetExpenseDto>(await _expenseRepo.GetByIdAsync(expenseId));
-            if (expense == null)
-            {
-                return NotFound();
-            }
-            return Ok(expense);
+        { 
+            var userName = User.GetUserName();
+            try
+                {
+                    var expense = _mapper.Map<GetExpenseDto>(await _expenseRepo.GetByIdAsync(expenseId, userName));
+                     if (expense == null)
+                    {
+                        return NotFound();
+                    }
+                    return Ok(expense);
+                }
+            catch (UnauthorizedAccessException)
+                {
+                    return Forbid();
+                }
+            
         }
 
         [HttpPut]
